@@ -53,8 +53,8 @@ Console Output example:
 
 1. Clone the repo and review the folder structure above.
 2. Set up your external ops root and secrets (see [Operational Artifacts](#operational-artifacts)).
-3. Configure your Tradier (or other) API token as described in [docs/tradier_account_setup.md](docs/tradier_account_setup.md).
-4. Review the [Operator Run Guide](docs/system_startup_shutdown_run_guide_v1.md) for startup, shutdown, and scheduler instructions.
+3. Configure your Tradier (or other) API token as described in [docs/tradier_account_setup.md](ACCESSp.md).
+4. Review the [Operator Run Guide](ACCESS.md) for startup, shutdown, and scheduler instructions.
 
 ### Run/Start/Stop
 
@@ -65,7 +65,7 @@ Console Output example:
 ## Data Providers
 
 - **Tradier** (primary): [Open account with referral link (3 months free)](https://trade.tradier.com/raf-open/?mwr=b999629c)
-- See [docs/tradier_account_setup.md](docs/tradier_account_setup.md) for setup and alternatives.
+- See [docs/tradier_account_setup.md](ACCESS.md) for setup and alternatives.
 
 ---
 
@@ -73,17 +73,17 @@ Console Output example:
 
 - **All live data, secrets, and config are externalized** to a canonical ops root (e.g., `C:/Code/KeysToKingdom/2TrackOptionsMind`).
 - The repo never contains live credentials or operational data.
-- See [docs/config_governance_v1.md](docs/config_governance_v1.md) for details.
+- See [docs/config_governance_v1.md](ACCESS.md) for details.
 
 ---
 
 ## Documentation Index
 
 - [5kFt Plan Overview](5kFtCurrentOverview.md)
-- [Operator Run Guide](docs/system_startup_shutdown_run_guide_v1.md)
-- [Data Contracts & Specs](docs/data_contracts_v1.md)
-- [Configuration Governance](docs/config_governance_v1.md)
-- [10kFt Initial Plan Overview](10kFtInitialPlanOverview.md)
+- [Operator Run Guide](ACCESS.md)
+- [Data Contracts & Specs](ACCESS.md)
+- [Configuration Governance](ACCESS.md)
+- [10kFt Initial Plan Overview](ACCESS.md)
 - [License](LICENSE.md)
 
 ---
@@ -91,4 +91,4 @@ Console Output example:
 ## Governance & License
 
 - Licensed under PolyForm Noncommercial 1.0.0 with a personal trading exception (see [LICENSE.md](LICENSE.md)).
-- All operational and configuration governance is documented in [docs/config_governance_v1.md](docs/config_governance_v1.md).
+- All operational and configuration governance is documented in [docs/config_governance_v1.md](ACCESS.md).
