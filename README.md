@@ -53,12 +53,12 @@ Console Output example:
 
 1. Clone the repo and review the folder structure above.
 2. Set up your external ops root and secrets (see [Operational Artifacts](#operational-artifacts)).
-3. Configure your Tradier (or other) API token as described in [docs/tradier_account_setup.md](ACCESSp.md).
+3. Configure your Tradier (or other) API token as described in [docs/tradier_account_setup.md](ACCESS.md).
 4. Review the [Operator Run Guide](ACCESS.md) for startup, shutdown, and scheduler instructions.
 
 ### Run/Start/Stop
 
-- See [docs/system_startup_shutdown_run_guide_v1.md](docs/system_startup_shutdown_run_guide_v1.md) for all operational commands and troubleshooting.
+- See [docs/system_startup_shutdown_run_guide_v1.md](ACCESS.md) for all operational commands and troubleshooting.
 
 ---
 
