@@ -1,6 +1,6 @@
 # 2TrackOptionsMind
 
-Local, rules-driven options decision engine for conservative covered calls (MSFT) and Wheel strategies (QQQ/NVDA), designed for individual traders who want deterministic, auditable, and manual execution with Excel integration.
+Local, rules-driven holdWrite options decision engine for conservative covered calls and Wheel strategies (QQQ/NVDA, etc), designed for individual traders who want deterministic, auditable, and manual execution with Excel integration.
 
 ---
 
@@ -71,15 +71,15 @@ Console Output example:
 
 ## Operational Artifacts
 
-- **All live data, secrets, and config are externalized** to a canonical ops root (e.g., `C:/Code/KeysToKingdom/2TrackOptionsMind`).
-- The repo never contains live credentials or operational data.
+- **All live data, secrets, and config are externalized** to a canonical ops root defined in a keys_root_path.txt (e.g., `C:/<yourPreferredLocalPath>/2TrackOptionsMind`).
+- The private repo never contains live credentials or operational data.
 - See [docs/config_governance_v1.md](ACCESS.md) for details.
 
 ---
 
 ## Documentation Index
 
-- [5kFt Plan Overview](5kFtCurrentOverview.md)
+- [5kFt Plan Overview](5kFtCurrentOverview.md)  (this link actually works in this public repo v. other redirs to ACCESS.md)
 - [Operator Run Guide](ACCESS.md)
 - [Data Contracts & Specs](ACCESS.md)
 - [Configuration Governance](ACCESS.md)
