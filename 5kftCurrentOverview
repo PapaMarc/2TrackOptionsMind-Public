@@ -1,0 +1,349 @@
+# 5kftCurrentOverview.md
+
+Status: Current-state architecture and operations overview
+Owner: Ops + Engine
+Last updated: 2026-05-31
+
+This document intentionally includes Sections 1-5 only (from initial 10kFtInitialPlanOverview.md).
+Legacy implementation-task sections (old 6-8 style content) are excluded so this stays focused on how the system currently functions (without tracing how its cursory capability was initially layered in).
+
+---
+
+## Table of Contents
+
+- [1. Objectives (Current Reality)](#1-objectives-current-reality)
+- [2. Core Metrics, Signals, and Score Semantics](#2-core-metrics-signals-and-score-semantics)
+- [3. Constraints and Design Principles](#3-constraints-and-design-principles)
+- [4. Current Architecture (5k ft)](#4-current-architecture-5k-ft)
+  - [4.1 End-to-end flow](#41-end-to-end-flow)
+  - [4.2 Data contracts and CSV operating surfaces](#42-data-contracts-and-csv-operating-surfaces)
+  - [4.3 Policy profiles, algorithms, and JSON control plane](#43-policy-profiles-algorithms-and-json-control-plane)
+  - [4.4 Engine env parameters: values, impacts, null assumptions](#44-engine-env-parameters-values-impacts-null-assumptions)
+  - [4.5 Console and lane semantics (NEW/OPEN/closing)](#45-console-and-lane-semantics-newopenclosing)
+- [5. Strategy Logic at a Glance](#5-strategy-logic-at-a-glance)
+- [Linked Docs/Scripts TOC (with Relevance)](#linked-docsscripts-toc-with-relevance)
+
+---
+
+## 1. Objectives (Current Reality)
+
+### Terminology clarification: strategy vs lane vs instance vs trade_mode
+
+- Strategy means the higher-level rule family, primarily `holdWrite_cc` or `wheel`.
+- Lane means lifecycle lineage/context per ticker within a strategy (also scoped by trade_mode), not the strategy itself.
+- Instance means the numbered identity for a specific active lineage when multiple same-strategy lineages exist; this is most visible in Wheel console output as `Instance1`, `Instance2`, and so on.
+- trade_mode means execution partition (`real` or `paper`) used to separate state, matching, and routing across modes.
+- A strategy can contain multiple lanes, and a trade_mode can contain multiple lanes for the same strategy.
+- trade_mode does not define a lane, and lane does not mean strategy.
+
+### 1.1 holdWrite_cc (MSFT strategy)
+
+- Primary objective: collect conservative covered-call premium while minimizing assignment risk on low-basis MSFT holdings.
+- Assignment stance: assignment is a risk event to avoid, especially around ex-dividend conditions.
+- Implementation context: this is profile-driven and algorithm-aware (not a single static rule block).
+
+Inline pointers:
+
+- [docs/rulesets_v1.md](docs/rulesets_v1.md)
+- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/config_governance_v1.md](docs/config_governance_v1.md)
+
+### 1.2 wheel (QQQ/NVDA/SMH and other .csv/profile-enabled symbols)
+
+- Primary objective: maximize wheel-cycle expected outcome over time (CSP -> CC -> CSP), with ownership flexibility.
+- Assignment stance: assignment is allowed; post-assignment lane management and follow-on CC selection are first-class behaviors.
+- Implementation context: multiple profiles per strategy and multiple algorithms can emit concurrent candidates per symbol.
+
+Inline pointers:
+
+- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/DCR_algorithm_profile_extension.md](docs/DCR_algorithm_profile_extension.md)
+- [config/strategy_policy_v1.template.json](config/strategy_policy_v1.template.json)
+
+---
+
+## 2. Core Metrics, Signals, and Score Semantics
+
+Across strategies, the current engine persists and/or renders:
+
+- Delta and delta-derived risk fields.
+- Premium and premium-yield terms.
+- Assignment and lifecycle context (especially for wheel lanes).
+- Confidence and algorithm score metadata.
+- Profile and algorithm lineage (`constraint_profile_id`, `algorithm_id`).
+
+### Candidate score suffix semantics (when enabled)
+
+When score and premium toggles are enabled (`ENGINE_ENABLE_SCORE=true` and `ENGINE_ENABLE_PREM=true`), candidate console rows append:
+
+- `scoreC`: normalized confidence from signal confidence.
+- `rawA`: algorithm-native raw score percentized for display.
+- `normA`: cohort percentile normalization of raw score (suppressed as `--` when history is insufficient).
+- `DeltaAdj`: delta-adjusted display value.
+- `prem`: premium display (mark preferred).
+
+Important scope note:
+
+- This score/premium suffix is for opportunity candidate rows.
+- Active OPENwheel/state rows are operational-state lines, not equivalent scoring lines.
+
+Inline pointers:
+
+- [docs/Score_Prem_Output.md](docs/Score_Prem_Output.md)
+- [src/engine/main.py](src/engine/main.py)
+- [docs/data_contracts_v1.md](docs/data_contracts_v1.md)
+
+---
+
+## 3. Constraints and Design Principles
+
+- Local-first deterministic system: no cloud requirement for core run loop.
+- Manual execution model: engine emits recommendations/signals; user executes at brokerage.
+- Externalized operational artifacts: DB/env/manual CSVs live outside repo root via keys-root indirection.
+- SQLite is the canonical operational state store with schema governance/migrations.
+- Policy-driven runtime behavior: symbols, profile enablement, and many constraints come from strategy policy JSON.
+- Safety and auditability over automation: stable lineage, repeatable reruns, and explicit routing semantics are prioritized.
+
+Inline pointers:
+
+- [docs/config_governance_v1.md](docs/config_governance_v1.md)
+- [src/engine/path_utils.py](src/engine/path_utils.py)
+- [src/state/sqlite_store.py](src/state/sqlite_store.py)
+- [docs/sql/schema_migration_safety_practice_v1.md](docs/sql/schema_migration_safety_practice_v1.md)
+
+---
+
+## 4. Current Architecture (5k ft)
+
+### 4.1 End-to-end flow
+
+1. Ingest quote/greek inputs for profile-enabled symbols and applicable expirations.
+2. Load current manual position and manual execution inputs (CSV contracts).
+3. Evaluate strategy rules per symbol, per algorithm, and per enabled profile.
+4. Apply deterministic ordering and lifecycle routing context.
+5. Persist signals, lifecycle/state data, and related metadata in SQLite.
+6. Render operator console output (including NEWwheel/OPENwheel distinctions and optional score/premium suffixes-- per following screenshot).
+7. Operator reviews output and executes manually; next run ingests resulting executions and advances lane state.
+
+Console Output example:
+
+<img src="consoleOutput.png" width="800" />
+
+Inline pointers:
+
+- [src/engine/pipeline.py](src/engine/pipeline.py)
+- [src/engine/config.py](src/engine/config.py)
+- [src/engine/main.py](src/engine/main.py)
+- [docs/engine_orchestration_v1.md](docs/engine_orchestration_v1.md)
+
+### 4.2 Data contracts and CSV operating surfaces
+
+#### Executions CSV (`executed_trades_manual_input.csv`)
+
+Current header and contract are documented centrally; notable high-impact fields:
+
+- `algorithm_id`: valid values `AlgoD` or `AlgoGplus` (default `AlgoD` if blank).
+- `strategy_name`: `wheel`, `holdWrite_cc` (legacy alias `msft_cc`).
+- `option_type`: `CALL`, `PUT`.
+- `side`: `SELL_TO_OPEN`, `BUY_TO_CLOSE`, `BUY_TO_OPEN`, `SELL_TO_CLOSE`.
+- `trade_mode`: `real`, `paper` (default `real`), and this is mode partitioning rather than lane identity.
+- `status`: includes `submitted`, `working`, `partially_filled`, `filled`, `canceled`, `expired`, `assigned`.
+- `lifecycle_type`: `wheel_csp`, `wheel_cc`, `holdWrite_cc` (legacy alias `msft_cc`).
+- `parent_order_id`: explicit lineage anchor for wheel CC follow-on mapping when multiple instances are open.
+
+#### Positions CSV (`positions_manual_input.csv`)
+
+Current required fields:
+
+- `account_id`, `symbol`, `asset_type`, `quantity`.
+
+Current optional fields (with defaults/inference):
+
+- `strategy` and option-specific fields are optional; routing inference applies when explicit values are absent.
+
+Inline pointers:
+
+- [docs/csv_contract_reference_v1.md](docs/csv_contract_reference_v1.md)
+- [config/executed_trades_manual_input_template.csv](config/executed_trades_manual_input_template.csv)
+- [config/positions_manual_input_template.csv](config/positions_manual_input_template.csv)
+- [src/engine/executions_loader.py](src/engine/executions_loader.py)
+- [src/engine/positions_loader.py](src/engine/positions_loader.py)
+
+### 4.3 Policy profiles, algorithms, and JSON control plane
+
+Current-state policy model is nested by strategy and profile:
+
+- `holdWrite_cc.profiles.<profile_id>`
+- `wheel.profiles.<profile_id>`
+
+Key realities:
+
+- Symbol scope is profile-driven (`symbols` arrays), not a flat symbol env list.
+- Profiles are deeply enable/disable-able (`enabled` gates evaluation and output).
+- Per-signal metadata includes profile lineage (`constraint_profile_id`) and algorithm lineage (`algorithm_id`).
+- Runtime can emit multiple candidates per symbol via algorithm x profile combinations.
+
+Algorithm model:
+
+- `AlgoD`: simpler delta-band + baseline scoring/selection behavior.
+- `AlgoGplus`: greek-weighted enhanced scoring inside policy constraints.
+
+Inline pointers:
+
+- [config/strategy_policy_v1.template.json](config/strategy_policy_v1.template.json)
+- [docs/schemas/strategy_policy_v1.schema.json](docs/schemas/strategy_policy_v1.schema.json)
+- [docs/DCR_algorithm_profile_extension.md](docs/DCR_algorithm_profile_extension.md)
+- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [src/engine/pipeline.py](src/engine/pipeline.py)
+
+### 4.4 Engine env parameters: values, impacts, null assumptions
+
+Operational source of truth is external `engine.env` referenced via [config/keys_root_path.txt](config/keys_root_path.txt).
+
+| Parameter                                         | Typical value/pattern                  | Impact                                                      | Null/blank assumption                                                    |
+| ------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `TRADIER_TOKEN`                                   | provider token                         | enables data adapter auth                                   | blank causes auth/data failure in live runs                              |
+| `ENGINE_DB_PATH`                                  | absolute path to `engine_state.db`     | controls SQLite location                                    | if blank, resolver attempts keys-root path, then template fallback rules |
+| `ENGINE_EXECUTIONS_INPUT_PATH`                    | absolute path to manual executions CSV | ingest source for lifecycle updates                         | if blank, resolver attempts keys-root path then template fallback        |
+| `ENGINE_POSITIONS_INPUT_PATH`                     | absolute path to manual positions CSV  | ingest source for inventory/state context                   | if blank, resolver attempts keys-root path then template fallback        |
+| `ENGINE_POLICY_PATH`                              | policy JSON path                       | controls profile/rule runtime                               | default points to template path when not overridden                      |
+| `ENGINE_ALERT_CHANNELS`                           | e.g. `log`                             | controls notifier fanout                                    | blank resolves to default `log` behavior                                 |
+| `ENGINE_EXPIRATION_OVERRIDE`                      | YYYY-MM-DD (optional)                  | explicit debug/safety expiration pin                        | blank means auto profile-driven expiration selection                     |
+| `ENGINE_EXPIRATION`                               | legacy alias                           | backward compatibility only                                 | blank preferred; deprecated path                                         |
+| `ENGINE_ENABLE_PHASE2_MULTI_INSTANCE_SAME_SYMBOL` | true/false                             | enables same-symbol multi-instance behavior                 | blank/default false unless set                                           |
+| `ENGINE_CONSOLE_CANDIDATES_DEDUP_ENABLED`         | true/false                             | candidate dedup behavior in console pass                    | blank/default behavior applies                                           |
+| `ENGINE_ENABLE_SCORE`                             | true/false                             | toggles score quartet output (`scoreC/rawA/normA/DeltaAdj`) | blank/default false in code unless set                                   |
+| `ENGINE_ENABLE_PREM`                              | true/false                             | toggles premium suffix output (`premX.XX`)                  | blank/default false in code unless set                                   |
+| `ALLOW_MISSING_DB_PATH`                           | true/false                             | relaxes strict DB-path existence checks                     | blank/false means stricter path requirements                             |
+
+Inline pointers:
+
+- [config/engine_template.env](config/engine_template.env)
+- [src/engine/config.py](src/engine/config.py)
+- [src/engine/path_utils.py](src/engine/path_utils.py)
+- [docs/config_governance_v1.md](docs/config_governance_v1.md)
+- [docs/system_startup_shutdown_run_guide_v1.md](docs/system_startup_shutdown_run_guide_v1.md)
+
+### 4.5 Console and lane semantics (NEW/OPEN/closing)
+
+Terminology note:
+
+- In this section, strategy means the rule family (`holdWrite_cc` or `wheel`).
+- Lane means lifecycle lineage/state thread within a strategy.
+- Instance means the numbered identity for a distinct active lineage within a strategy when multiple such lineages exist.
+- paper vs real is trade_mode partitioning and should not be interpreted as lane or strategy identity.
+
+#### NEWwheel
+
+- Represents recommendation-only new opener opportunities.
+- Should remain opportunity visibility, not durable executed-lane state by itself.
+
+#### OPENwheel
+
+- Represents active/open wheel CSP lineage state in console lifecycle view.
+- Should follow lineage identity and instance semantics, not simplistic symbol-only grouping.
+- Multiple OPENwheel instances can exist within the same `wheel` strategy; those distinct lineages surface as numbered `InstanceN` rows.
+
+#### Closing/resolution semantics
+
+A lane transitions out of open state as lifecycle events progress (for example close, assignment, expiry, or other terminal lifecycle outcomes based on ingested executions/state transitions). Operationally, this is reflected by disappearance/transition of OPENwheel context and evolution of related rows.
+
+Current bug-fix and DCR context that impacted working behavior includes:
+
+- lineage anchoring with `parent_order_id`,
+- separation of recommendation lines vs open-lane state lines,
+- instance-numbering correctness for same-symbol multi-lane scenarios,
+- OPENwheel dedup/canonicalization and console clarity improvements.
+
+Inline pointers:
+
+- [DCR_Multi-InstanceCleanup.md](docs/DCR_Multi-InstanceCleanup.md)
+- [docs/DCR_Active_Instances_Issues.md](docs/DCR_Active_Instances_Issues.md)
+- [docs/BUG_consoleDisplay.md](docs/BUG_consoleDisplay.md)
+- [docs/csv_contract_reference_v1.md](docs/csv_contract_reference_v1.md)
+- [src/engine/main.py](src/engine/main.py)
+
+---
+
+## 5. Strategy Logic at a Glance
+
+### 5.1 holdWrite_cc (MSFT)
+
+- Intent: conservative premium collection with assignment-risk suppression.
+- Profile constraints govern symbol eligibility and strike/expiration filtering.
+- Ex-dividend logic remains a high-priority risk path for early assignment management.
+- AlgoD and AlgoGplus both operate, but with different selection/scoring style.
+
+Inline pointers:
+
+- [src/strategies/hold_write_cc/rules.py](src/strategies/hold_write_cc/rules.py)
+- [src/strategies/msft_cc/rules.py](src/strategies/msft_cc/rules.py)
+- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/rulesets_v1.md](docs/rulesets_v1.md)
+
+### 5.2 wheel
+
+- Intent: lane-aware wheel lifecycle management across opener and follow-on contexts.
+- Supports active-instance and generic-new-lane recommendation behavior with explicit semantics.
+- ALT CC policy block (`alt_cc`) exists in policy template and supports regime-aware ranking controls.
+- Multi-instance same-symbol behavior and lineage mapping are now core operational concerns.
+- Within the `wheel` strategy, multiple separate active lineages can coexist and are distinguished by numbered instances in console output.
+- Lanes are lifecycle lineages in either trade_mode; `real` and `paper` partition those lanes but do not redefine what a lane is.
+
+Inline pointers:
+
+- [src/strategies/wheel/rules.py](src/strategies/wheel/rules.py)
+- [config/strategy_policy_v1.template.json](config/strategy_policy_v1.template.json)
+- [docs/DCR_Active_Instances_Issues.md](docs/DCR_Active_Instances_Issues.md)
+- [docs/BUG_consoleDisplay.md](docs/BUG_consoleDisplay.md)
+
+### 5.3 Scoring variations and meaning
+
+- `AlgoD` and `AlgoGplus` raw scores are not identical scales; use `normA` for cohort-relative comparability in display.
+- `scoreC` is confidence-derived and should not be conflated with raw algorithm score.
+- `DeltaAdj` and `prem` are complementary context fields for quick operator triage.
+
+Inline pointers:
+
+- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/Score_Prem_Output.md](docs/Score_Prem_Output.md)
+- [src/engine/main.py](src/engine/main.py)
+
+---
+
+## Linked Docs/Scripts TOC (with Relevance)
+
+This list covers the primary references linked throughout this overview and why each is included.
+
+| Reference                                                                                                  | Why it matters in the solution                                                                      |
+| ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [docs/config_governance_v1.md](docs/config_governance_v1.md)                                               | Defines env/runtime governance and profile-driven expiration/symbol behavior foundations.           |
+| [docs/csv_contract_reference_v1.md](docs/csv_contract_reference_v1.md)                                     | Canonical valid-entry and default contract for manual CSV ingest surfaces.                          |
+| [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)                           | Explains AlgoD vs AlgoGplus intent and score philosophy used by strategy selection paths.           |
+| [docs/Score_Prem_Output.md](docs/Score_Prem_Output.md)                                                     | Defines scoreC/rawA/normA/DeltaAdj/premium display semantics and guardrails.                        |
+| [docs/DCR_algorithm_profile_extension.md](docs/DCR_algorithm_profile_extension.md)                         | Captures profile-extension rationale and constraints for algorithm x profile operation.             |
+| [docs/DCR_Active_Instances_Issues.md](docs/DCR_Active_Instances_Issues.md)                                 | Documents NEWwheel/OPENwheel lifecycle semantics, fixes, and expectations around instance creation. |
+| [docs/BUG_consoleDisplay.md](docs/BUG_consoleDisplay.md)                                                   | Records concrete console/lineage defects and implemented lineage/format corrections.                |
+| [DCR_Multi-InstanceCleanup.md](docs/DCR_Multi-InstanceCleanup.md)                                          | Consolidated canonical behavior for multi-instance console/lane identity after cleanup.             |
+| [config/strategy_policy_v1.template.json](config/strategy_policy_v1.template.json)                         | Practical example of active policy shape, profiles, symbols, and alt_cc controls.                   |
+| [docs/schemas/strategy_policy_v1.schema.json](docs/schemas/strategy_policy_v1.schema.json)                 | Validation contract for policy JSON structure and allowed fields.                                   |
+| [config/engine_template.env](config/engine_template.env)                                                   | Baseline env variable surface and starter values for operational configuration.                     |
+| [src/engine/config.py](src/engine/config.py)                                                               | Runtime config loading behavior and defaults/legacy compatibility logic.                            |
+| [src/engine/path_utils.py](src/engine/path_utils.py)                                                       | Null/blank path resolution behavior and fallback chain for DB/CSV surfaces.                         |
+| [src/engine/pipeline.py](src/engine/pipeline.py)                                                           | Core orchestration and deterministic ordering/lifecycle routing implementation.                     |
+| [src/engine/main.py](src/engine/main.py)                                                                   | Console rendering semantics and score/premium output formatting implementation.                     |
+| [src/engine/executions_loader.py](src/engine/executions_loader.py)                                         | Enforces execution CSV parsing and valid-value expectations at ingest.                              |
+| [src/engine/positions_loader.py](src/engine/positions_loader.py)                                           | Applies positions CSV parsing and inventory context normalization.                                  |
+| [src/state/sqlite_store.py](src/state/sqlite_store.py)                                                     | Canonical SQLite state layer and schema version enforcement.                                        |
+| [docs/engine_orchestration_v1.md](docs/engine_orchestration_v1.md)                                         | Design-level orchestration reference connecting ingest, evaluate, persist, and render paths.        |
+| [docs/rulesets_v1.md](docs/rulesets_v1.md)                                                                 | Strategy parameter definitions and rule intent mapping.                                             |
+| [docs/system_startup_shutdown_run_guide_v1.md](docs/system_startup_shutdown_run_guide_v1.md)               | Operational startup/shutdown/scheduler runbook for safe daily execution.                            |
+| [scripts/ops/engine_scheduler_timeaware.ps1](scripts/ops/engine_scheduler_timeaware.ps1)                   | Production scheduler cadence logic and Monday expiration rollover behavior.                         |
+| [scripts/maint/set_engine_expiration_next_friday.ps1](scripts/maint/set_engine_expiration_next_friday.ps1) | Manual fallback helper for weekly expiration pin management when override mode is used.             |
+| [scripts/evo/validate_schema_migration_sandbox.py](scripts/evo/validate_schema_migration_sandbox.py)       | Preflight safety validation of migration chain before touching live operational DBs.                |
+| [scripts/evo/apply_schema_migration_live.py](scripts/evo/apply_schema_migration_live.py)                   | Controlled live schema migration entrypoint after sandbox validation passes.                        |
+| [docs/sql/schema_migration_safety_practice_v1.md](docs/sql/schema_migration_safety_practice_v1.md)         | Migration safety policy that governs how schema changes are promoted.                               |
+
+---
+
+End of document.
