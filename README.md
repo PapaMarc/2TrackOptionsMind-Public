@@ -71,7 +71,7 @@ Console Output example:
 
 ## Operational Artifacts
 
-- **All live data, secrets, and config are externalized** to a canonical ops root defined in a keys_root_path.txt (e.g., `C:/<yourPreferredLocalPath>/2TrackOptionsMind`).
+- **All live data, secrets, and config are externalized** to a canonical ops root as defined in config/keys_root_path.txt (e.g., `C:/example/private-data-root`).
 - The private repo never contains live credentials or operational data.
 - See [docs/config_governance_v1.md](ACCESS.md) for details.
 
