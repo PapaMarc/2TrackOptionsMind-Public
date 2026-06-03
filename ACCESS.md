@@ -14,4 +14,4 @@ To help me understand your request, please include:
 
 I will endeavor to respond within a few days.
 
-Thank you for your interest.
+Thank you for your interest-- [PapaMarc](https://merware.net/#marc)
