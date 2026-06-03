@@ -80,7 +80,7 @@ Console Output example:
 
 ## Documentation Index
 
-- [5kFt Plan Overview](5kFtCurrentOverview.md)  (this link actually works in this public repo v. other redirs to ACCESS.md)
+- [5kFt Plan Overview](5kFtCurrentOverview.md)  (this link actually works in this public repo v. others redir to ACCESS.md)
 - [Operator Run Guide](ACCESS.md)
 - [Data Contracts & Specs](ACCESS.md)
 - [Configuration Governance](ACCESS.md)
