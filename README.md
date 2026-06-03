@@ -20,7 +20,7 @@ Local, rules-driven holdWrite options decision engine for conservative covered c
 - Excel/PowerQuery integration for dashboards and scenario modeling
 - SQLite-based state and audit trail
 - Console rendered guidance per strategy, lane, instance, algorithm, profile with optional scoring (per following screenshot)
-- Paper and Real trade bifurcation; premium income tracking support.
+- Paper and Real trade_mode bifurcation; premium income tracking support.
 - Pluggable alerting hooks in place on signals actions: roll, close, avoid_assignment, optimize_dividend_capture in pipeline.py:543 (aspirational: email, Pushover, Teams-- NYI)
 - All operational data and secrets externalized (never in repo)
 - Manual execution at your brokerage (no auto-trading)
