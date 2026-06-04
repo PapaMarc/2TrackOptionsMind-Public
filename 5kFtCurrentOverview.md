@@ -45,7 +45,7 @@ Legacy implementation-task sections (old 6-8 style content) are excluded so this
 Inline pointers:
 
 - [docs/rulesets_v1.md](docs/rulesets_v1.md)
-- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/Algorithms_In_Strategy_Context.md](Algorithms_In_Strategy_Context.md)
 - [docs/config_governance_v1.md](docs/config_governance_v1.md)
 
 ### 1.2 wheel (QQQ/NVDA/SMH and other .csv/profile-enabled symbols)
@@ -56,7 +56,7 @@ Inline pointers:
 
 Inline pointers:
 
-- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/Algorithms_In_Strategy_Context.md](Algorithms_In_Strategy_Context.md)
 - [docs/DCR_algorithm_profile_extension.md](docs/DCR_algorithm_profile_extension.md)
 - [config/strategy_policy_v1.template.json](config/strategy_policy_v1.template.json)
 
@@ -193,7 +193,7 @@ Inline pointers:
 - [config/strategy_policy_v1.template.json](config/strategy_policy_v1.template.json)
 - [docs/schemas/strategy_policy_v1.schema.json](docs/schemas/strategy_policy_v1.schema.json)
 - [docs/DCR_algorithm_profile_extension.md](docs/DCR_algorithm_profile_extension.md)
-- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/Algorithms_In_Strategy_Context.md](Algorithms_In_Strategy_Context.md)
 - [src/engine/pipeline.py](src/engine/pipeline.py)
 
 ### 4.4 Engine env parameters: values, impacts, null assumptions
@@ -278,7 +278,7 @@ Inline pointers:
 
 - [src/strategies/hold_write_cc/rules.py](src/strategies/hold_write_cc/rules.py)
 - [src/strategies/msft_cc/rules.py](src/strategies/msft_cc/rules.py)
-- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/Algorithms_In_Strategy_Context.md](Algorithms_In_Strategy_Context.md)
 - [docs/rulesets_v1.md](docs/rulesets_v1.md)
 
 ### 5.2 wheel
@@ -305,7 +305,7 @@ Inline pointers:
 
 Inline pointers:
 
-- [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)
+- [docs/Algorithms_In_Strategy_Context.md](Algorithms_In_Strategy_Context.md)
 - [docs/Score_Prem_Output.md](docs/Score_Prem_Output.md)
 - [src/engine/main.py](src/engine/main.py)
 
@@ -319,7 +319,7 @@ This list covers the primary references linked throughout this overview and why 
 | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [docs/config_governance_v1.md](docs/config_governance_v1.md)                                               | Defines env/runtime governance and profile-driven expiration/symbol behavior foundations.           |
 | [docs/csv_contract_reference_v1.md](docs/csv_contract_reference_v1.md)                                     | Canonical valid-entry and default contract for manual CSV ingest surfaces.                          |
-| [docs/Algorithms_In_Strategy_Context.md](docs/Algorithms_In_Strategy_Context.md)                           | Explains AlgoD vs AlgoGplus intent and score philosophy used by strategy selection paths.           |
+| [docs/Algorithms_In_Strategy_Context.md](Algorithms_In_Strategy_Context.md)                                | Explains AlgoD vs AlgoGplus intent and score philosophy used by strategy selection paths.           |
 | [docs/Score_Prem_Output.md](docs/Score_Prem_Output.md)                                                     | Defines scoreC/rawA/normA/DeltaAdj/premium display semantics and guardrails.                        |
 | [docs/DCR_algorithm_profile_extension.md](docs/DCR_algorithm_profile_extension.md)                         | Captures profile-extension rationale and constraints for algorithm x profile operation.             |
 | [docs/DCR_Active_Instances_Issues.md](docs/DCR_Active_Instances_Issues.md)                                 | Documents NEWwheel/OPENwheel lifecycle semantics, fixes, and expectations around instance creation. |
