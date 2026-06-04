@@ -8,7 +8,7 @@ Local, rules-driven holdWrite options decision engine for conservative covered c
 
 2TrackOptionsMind is a local-first Python engine for:
 
-- holdWrite conservative covered call management on old low-basis, high-tax implication, long share positions (assignment avoidance) for income generation above/beyond dividends and appreciation
+- holdWrite conservative covered call management on old low-basis, high-tax implication, long share positions (assignment avoidance) for incremental income generation above/beyond dividends and appreciation
 - Wheel strategy automation for arbitrary tickers eg. QQQ/NVDA/SMH (assignment allowed)
 - Manual trade execution, with all signals and analytics surfaced in Excel, along with console surfaced confirmation and guidance.
 
