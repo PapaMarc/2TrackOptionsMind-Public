@@ -1,6 +1,6 @@
 # 2TrackOptionsMind
 
-Local, rules-driven holdWrite options decision engine for conservative covered calls and Wheel strategies (QQQ/NVDA, etc), designed for individual traders who want deterministic, auditable, and manual execution with Excel integration.
+Local, rules-driven, options decision engine, for both holdWrite conservative covered calls and Wheel strategies (QQQ/NVDA, etc), designed for individual traders who want deterministic, auditable, and manual execution with Excel integration.
 
 ---
 
