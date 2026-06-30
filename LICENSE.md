@@ -1,4 +1,4 @@
-Copyright (c) 2026 MeS Software, Merware, and Marc Seinfeld
+Copyright (c) 2026 MeS Software, [Merware](https://merware.net/#marc), and Marc Seinfeld
 
 This software is provided under the PolyForm Noncommercial License 1.0.0,
 with an additional exception granting limited commercial rights to
